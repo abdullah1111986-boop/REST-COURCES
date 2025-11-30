@@ -19,12 +19,27 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-  static getDerivedStateFromError() { return { hasError: true }; }
+  static getDerivedStateFromError(error: any): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
 
   render() {
-    if (this.state.hasError) return <div className="p-8 text-center text-red-600">حدث خطأ غير متوقع. يرجى تحديث الصفحة.</div>;
+    if (this.state.hasError) {
+      return (
+        <div className="p-8 text-center text-red-600">
+          حدث خطأ غير متوقع. يرجى تحديث الصفحة.
+        </div>
+      );
+    }
     return this.props.children;
   }
 }

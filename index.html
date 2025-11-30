@@ -55,6 +55,7 @@
         padding: 2rem;
         text-align: center;
         direction: ltr;
+        overflow: auto;
       }
     </style>
     <!-- Error Trap Script: This will catch why the screen is white and show it -->
@@ -64,19 +65,20 @@
         var msg = document.getElementById('error-message');
         if (overlay && msg) {
           overlay.style.display = 'block';
-          msg.textContent = 'Application Crash: ' + message + '\nAt: ' + source + ':' + lineno;
+          msg.textContent = 'Application Crash: ' + message + '\nAt: ' + source + ':' + lineno + '\n' + (error ? error.stack : '');
         }
       };
     </script>
-  <script type="importmap">
+    <!-- REMOVED IMPORTMAP: Relying on Vite/Vercel bundler to provide dependencies -->
+<script type="importmap">
 {
   "imports": {
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5"
+    "xlsx": "https://aistudiocdn.com/xlsx@^0.18.5",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
   }
 }
 </script>
@@ -85,7 +87,7 @@
     <div id="root"></div>
     <div id="error-overlay">
       <h1 style="color: red; font-size: 24px; margin-bottom: 10px;">Something went wrong</h1>
-      <pre id="error-message" style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; text-align: left;"></pre>
+      <pre id="error-message" style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow: auto; text-align: left; font-family: monospace;"></pre>
       <p style="margin-top: 20px; color: #666;">Try clearing your cache or refreshing the page.</p>
     </div>
     <script type="module" src="/index.tsx"></script>
