@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, ReactNode, ErrorInfo } from 'react';
+import React, { useState, useEffect, ReactNode, ErrorInfo } from 'react';
 import { Search, RotateCcw, User, FileText, ChevronRight, Hash, Phone, Building, Info, Award, Calendar, GraduationCap, Lock, ShieldCheck, LogIn, ArrowRight, UserCog, X, FileSpreadsheet, Eye, EyeOff, Code, Users, Cloud, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import FileUpload from './components/FileUpload';
 import TranscriptTable from './components/TranscriptTable';
@@ -17,8 +17,11 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
-class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false };
+class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   static getDerivedStateFromError(error: any): ErrorBoundaryState {
     return { hasError: true };
