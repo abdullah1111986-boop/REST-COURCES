@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Component, ReactNode, ErrorInfo } from 'react';
 import { Search, RotateCcw, User, FileText, ChevronRight, Hash, Phone, Building, Info, Award, Calendar, GraduationCap, Lock, ShieldCheck, LogIn, ArrowRight, UserCog, X, FileSpreadsheet, Eye, EyeOff, Code, Users, Cloud, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import FileUpload from './components/FileUpload';
@@ -9,7 +8,7 @@ import { TraineeProfile, AppState } from './types';
 
 const SUPERVISOR_PASSWORD = '0558882711';
 
-// Error Boundary for basic runtime safety
+// Error Boundary
 interface ErrorBoundaryProps {
   children?: ReactNode;
 }
@@ -19,10 +18,7 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  state: ErrorBoundaryState = { hasError: false };
 
   static getDerivedStateFromError(error: any): ErrorBoundaryState {
     return { hasError: true };
@@ -35,8 +31,17 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-8 text-center text-red-600">
-          حدث خطأ غير متوقع. يرجى تحديث الصفحة.
+        <div className="min-h-screen flex items-center justify-center p-8 text-center bg-gray-50">
+          <div className="bg-white p-8 rounded-xl shadow-lg max-w-md border border-red-100">
+             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+               <WifiOff className="w-8 h-8" />
+             </div>
+             <h2 className="text-xl font-bold text-gray-800 mb-2">عذراً، حدث خطأ غير متوقع</h2>
+             <p className="text-gray-500 mb-6">يرجى تحديث الصفحة والمحاولة مرة أخرى.</p>
+             <button onClick={() => window.location.reload()} className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition">
+               تحديث الصفحة
+             </button>
+          </div>
         </div>
       );
     }
@@ -53,16 +58,15 @@ const App: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
   
-  // Server Connection Status
+  // Server Status
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
   
-  // Supervisor Auth State
+  // Supervisor Auth
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [loginError, setLoginError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Load data from Firebase on mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoadingData(true);
@@ -74,24 +78,21 @@ const App: React.FC = () => {
         }
         setServerStatus('connected');
       } catch (err) {
-        console.error("Failed to load data from cloud", err);
+        console.error("Failed to load data", err);
         setServerStatus('disconnected');
       } finally {
         setIsLoadingData(false);
       }
     };
     
-    // Initial Load
     loadData();
 
-    // Network Listeners for real-time updates
     const handleOnline = () => setServerStatus('connected');
     const handleOffline = () => setServerStatus('disconnected');
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Always start in SEARCH mode
     setAppState(AppState.SEARCH);
 
     return () => {
@@ -100,56 +101,43 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Handle Excel/CSV Upload & Save to Firebase
   const handleFileProcessed = async (file: File) => {
     setIsProcessing(true);
     setError(null);
     try {
-      // 1. Parse Local File
       const parsedData = await parseExcelData(file);
-      
       if (parsedData.length === 0) {
-        setError("لم يتم العثور على بيانات صالحة في الملف. تأكد من وجود أعمدة (الرقم، الاسم) وبيانات صحيحة.");
+        setError("لم يتم العثور على بيانات صالحة. تأكد من صحة الملف.");
         setIsProcessing(false);
         return;
       } 
-
-      // 2. Upload to Firebase (Replaces old data)
       await uploadTraineeData(parsedData);
-      
-      // 3. Update State
       setTrainees(parsedData);
-      setServerStatus('connected'); // Confirm connection on success
+      setServerStatus('connected');
       setError(null);
       alert('تم رفع البيانات وحفظها في السيرفر بنجاح.');
-
     } catch (err) {
       console.error(err);
-      setServerStatus('disconnected'); // Assume connection issue on upload fail
-      setError("حدث خطأ أثناء معالجة أو رفع الملف. يرجى المحاولة مرة أخرى.");
+      setServerStatus('disconnected');
+      setError("حدث خطأ أثناء معالجة أو رفع الملف.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle Search
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const term = searchId.trim();
     if (!term) return;
 
     const found = trainees.find(t => {
-      // 1. Check ID (Exact match)
       if (t.id === term) return true;
-      
-      // 2. Check Mobile Number (Search inside details)
       const mobileMatch = Object.entries(t.details).some(([key, value]) => {
         const k = key.toLowerCase();
         const v = String(value).trim();
         const isMobileKey = k.includes('جوال') || k.includes('phone') || k.includes('mobile') || k.includes('هاتف');
         return isMobileKey && v.includes(term);
       });
-      
       return mobileMatch;
     });
 
@@ -169,7 +157,6 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // Supervisor Actions
   const openSupervisorLogin = () => {
     setShowLoginModal(true);
     setLoginError('');
@@ -181,7 +168,6 @@ const App: React.FC = () => {
     e.preventDefault();
     if (passwordInput === SUPERVISOR_PASSWORD) {
       setShowLoginModal(false);
-      // Switch to UPLOAD mode (Supervisor Dashboard)
       setAppState(AppState.UPLOAD);
       setSearchId('');
       setCurrentTrainee(null);
@@ -196,20 +182,18 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  // Helper to render icon based on key keywords
   const getDetailIcon = (key: string) => {
     const k = key.toLowerCase();
-    if (k.includes('جوال') || k.includes('phone') || k.includes('mobile')) return <Phone className="w-4 h-4" />;
-    if (k.includes('قسم') || k.includes('تخصص') || k.includes('major') || k.includes('dept')) return <Building className="w-4 h-4" />;
-    if (k.includes('معدل') || k.includes('gpa')) return <Award className="w-4 h-4" />;
-    if (k.includes('فصل') || k.includes('semesters')) return <Calendar className="w-4 h-4" />;
-    if (k.includes('وحدات') || k.includes('credits')) return <Hash className="w-4 h-4" />;
-    if (k.includes('حالة') || k.includes('status')) return <User className="w-4 h-4" />;
-    if (k.includes('مرشد') || k.includes('advisor')) return <User className="w-4 h-4" />;
-    return <Info className="w-4 h-4" />;
+    if (k.includes('جوال') || k.includes('phone')) return <Phone className="w-5 h-5" />;
+    if (k.includes('قسم') || k.includes('تخصص')) return <Building className="w-5 h-5" />;
+    if (k.includes('معدل') || k.includes('gpa')) return <Award className="w-5 h-5" />;
+    if (k.includes('فصل') || k.includes('semesters')) return <Calendar className="w-5 h-5" />;
+    if (k.includes('وحدات') || k.includes('credits')) return <Hash className="w-5 h-5" />;
+    if (k.includes('حالة') || k.includes('status')) return <User className="w-5 h-5" />;
+    if (k.includes('مرشد') || k.includes('advisor')) return <User className="w-5 h-5" />;
+    return <Info className="w-5 h-5" />;
   };
 
-  // Function to sort details based on the exact user-provided header order
   const getSortedDetails = (details: Record<string, string | number>) => {
     const preferredOrder = [
       'القسم', 'التخصص', 'حالة المتدرب', 'فصل القبول', 'عدد الفصول',
@@ -217,83 +201,64 @@ const App: React.FC = () => {
       'عدد المقررات المطلوبة للبرنامج', 'عدد الوحدات المعتمده للبرنامج',
       'عدد المقررات المنجزه للبرنامج', 'عدد الوحدات المنجزه للبرنامج'
     ];
-
     const sortedEntries: [string, string | number][] = [];
     const remainingEntries = { ...details };
 
     preferredOrder.forEach(orderKey => {
-      const foundKey = Object.keys(remainingEntries).find(k => 
-        k.trim() === orderKey.trim() || k.includes(orderKey)
-      );
+      const foundKey = Object.keys(remainingEntries).find(k => k.trim() === orderKey.trim() || k.includes(orderKey));
       if (foundKey) {
         sortedEntries.push([foundKey, remainingEntries[foundKey]]);
         delete remainingEntries[foundKey];
       }
     });
 
-    Object.entries(remainingEntries).forEach(entry => {
-      sortedEntries.push(entry);
-    });
-
+    Object.entries(remainingEntries).forEach(entry => sortedEntries.push(entry));
     return sortedEntries;
   };
 
   return (
     <ErrorBoundary>
-    <div className="min-h-screen bg-gray-50 flex flex-col font-sans" dir="rtl">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 print:hidden shadow-sm">
+    <div className="flex flex-col min-h-screen" dir="rtl">
+      
+      {/* PROFESSIONAL HEADER */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-20 print:hidden shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-20 items-center">
+          <div className="flex justify-between h-24 items-center">
             
-            {/* Right Side: Logo & Institution Info */}
-            <div className="flex items-center gap-4">
-              {/* Back Button for View Mode */}
-              {appState === AppState.VIEW && (
-                <button 
-                  onClick={resetSearch}
-                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-primary-600 transition-colors"
-                  title="العودة للقائمة"
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              )}
-              
-              <div className="flex items-center gap-3">
-                <div className="bg-gradient-to-br from-primary-600 to-primary-800 p-2.5 rounded-xl shadow-md text-white">
-                  <GraduationCap className="h-7 w-7" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-primary-600 tracking-wider mb-0.5">الكلية التقنية بالطائف</span>
-                  <h1 className="text-xl font-bold text-gray-900 leading-none mb-1">نظام السجل التدريبي</h1>
-                  <div className="flex items-center">
-                    <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-gray-200">
-                      قسم التقنية الميكانيكية
-                    </span>
-                  </div>
+            {/* Logo Section */}
+            <div className="flex items-center gap-5">
+              <div className="hidden sm:flex relative items-center justify-center w-14 h-14 bg-gradient-to-tr from-primary-700 to-primary-900 rounded-2xl shadow-lg text-white transform hover:rotate-3 transition-transform duration-300">
+                <GraduationCap className="h-8 w-8" />
+                <div className="absolute inset-0 border-2 border-white/20 rounded-2xl"></div>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-primary-600 tracking-wide mb-1 uppercase opacity-90">الكلية التقنية بالطائف</span>
+                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 leading-none tracking-tight">نظام السجل التدريبي</h1>
+                <div className="flex mt-1.5">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shadow-sm">
+                    قسم التقنية الميكانيكية
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Left Side: Supervisor Control (Server Status moved to UPLOAD view) */}
+            {/* Actions Section */}
             <div className="flex items-center gap-3">
-              
-              {/* Only show Supervisor Icon if NOT in upload mode (to login) */}
               {appState !== AppState.UPLOAD ? (
                 <button 
                   onClick={openSupervisorLogin}
-                  className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+                  className="group flex items-center justify-center w-11 h-11 text-slate-400 hover:text-primary-600 bg-transparent hover:bg-primary-50 rounded-xl transition-all duration-200 border border-transparent hover:border-primary-100"
                   title="دخول المشرفين"
                 >
-                  <UserCog className="w-6 h-6" />
+                  <UserCog className="w-6 h-6 transform group-hover:scale-110 transition-transform" />
                 </button>
               ) : (
                 <button 
                   onClick={exitSupervisorMode}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 hover:text-white hover:bg-red-500 rounded-lg transition-all duration-200 border border-slate-200 hover:border-red-500"
                 >
                   <X className="w-4 h-4" />
-                  <span>خروج المشرف</span>
+                  <span className="hidden sm:inline">خروج المشرف</span>
                 </button>
               )}
             </div>
@@ -301,334 +266,355 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 print:py-0 print:max-w-none">
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 print:py-0 print:max-w-none">
         
-        {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg flex items-center gap-2">
-            <span className="font-bold">تنبيه:</span> {error}
+          <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-lg shadow-sm flex items-center gap-3 animate-fade-in-up">
+            <Info className="w-5 h-5 shrink-0" />
+            <span className="font-medium">{error}</span>
           </div>
         )}
 
-        {/* Loading State for Initial Data Fetch */}
+        {/* LOADING */}
         {isLoadingData && appState === AppState.SEARCH && (
-           <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-             <div className="bg-gray-100 p-4 rounded-full mb-4">
-               <RefreshCw className="w-8 h-8 text-primary-400 animate-spin" />
+           <div className="flex flex-col items-center justify-center py-24 animate-pulse">
+             <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-5">
+               <RefreshCw className="w-10 h-10 text-primary-500 animate-spin" />
              </div>
-             <p className="text-gray-500 font-medium">جاري الاتصال بقاعدة البيانات...</p>
+             <p className="text-slate-400 font-medium text-lg">جاري تهيئة النظام...</p>
            </div>
         )}
 
-        {/* MODE: SUPERVISOR UPLOAD */}
+        {/* --- VIEW: UPLOAD DASHBOARD --- */}
         {appState === AppState.UPLOAD && (
-          <div className="animate-fade-in-up">
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-               {/* Instructions Card */}
-               <div className="lg:col-span-2 bg-white border border-blue-100 rounded-xl shadow-sm p-6">
-                 <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
-                    <FileSpreadsheet className="w-5 h-5 text-blue-600" />
-                    تعليمات تنسيق ملف البيانات (Excel/CSV)
-                 </h3>
-
-                 {/* Note about SH06 Report */}
-                 <div className="mb-6 bg-blue-50 border-r-4 border-blue-500 p-4 rounded-l-md">
-                   <p className="text-sm text-blue-800 font-medium leading-relaxed">
-                     <Info className="w-4 h-4 inline-block ml-2 -mt-1" />
-                     تنويه هام: يعتمد هذا البرنامج بشكل أساسي على ملف تقرير <strong>SH06</strong> المستخرج من نظام رايات. يرجى التأكد من استخدامه لضمان دقة البيانات.
-                   </p>
-                 </div>
-
-                 <div className="text-sm text-gray-700 space-y-3">
-                   <p>لضمان قراءة البيانات بشكل صحيح، يرجى التأكد من احتواء الملف على الأعمدة التالية بنفس المسميات:</p>
-                   
-                   <div className="space-y-4">
-                     <div>
-                       <strong className="block text-gray-900 mb-1">1. البيانات الشخصية والأكاديمية:</strong>
-                       <p className="bg-gray-50 p-2 rounded border border-gray-100 text-xs leading-relaxed">
-                         القسم، التخصص، حالة المتدرب، فصل القبول، عدد الفصول، المرشد الأكاديمي، رقم الهاتف الجوال، المعدل التراكمي، وصف المستوى
-                       </p>
-                     </div>
-
-                     <div>
-                       <strong className="block text-gray-900 mb-1">2. إحصائيات البرنامج التدريبي:</strong>
-                       <p className="bg-gray-50 p-2 rounded border border-gray-100 text-xs leading-relaxed">
-                         عدد المقررات المطلوبة للبرنامج، عدد الوحدات المعتمده للبرنامج، عدد المقررات المنجزه للبرنامج، عدد الوحدات المنجزه للبرنامج
-                       </p>
-                     </div>
-
-                     <div>
-                       <strong className="block text-gray-900 mb-1">3. بيانات المقررات (لكل مادة):</strong>
-                       <ul className="list-disc list-inside bg-gray-50 p-2 rounded border border-gray-100 text-xs space-y-1">
-                         <li><span className="font-semibold">رمز المقرر</span> (مثال: ENG 101)</li>
-                         <li><span className="font-semibold">إسم المقرر</span> (مثال: لغة إنجليزية)</li>
-                         <li><span className="font-semibold">الوحدات المعتمدة للمقرر</span> (هام: يجب استخدام هذا المسمى بدقة)</li>
-                         <li><span className="font-semibold">حالة المقرر/ مستوفى</span> (القيمة: نعم/مستوفي أو لا/غير مستوفي)</li>
-                       </ul>
-                     </div>
-                   </div>
-                 </div>
+          <div className="animate-fade-in-up space-y-8">
+            <div className="flex items-center justify-between">
+               <div>
+                  <h2 className="text-2xl font-bold text-slate-800">لوحة تحكم المشرف</h2>
+                  <p className="text-slate-500 mt-1">إدارة بيانات المتدربين وتحديث السجلات</p>
                </div>
+               
+               {/* Server Status Indicator */}
+               <div className={`flex items-center gap-3 px-4 py-2 rounded-full border shadow-sm ${
+                 serverStatus === 'connected' ? 'bg-white border-green-200 text-green-700' : 
+                 serverStatus === 'disconnected' ? 'bg-white border-red-200 text-red-700' : 
+                 'bg-white border-yellow-200 text-yellow-700'
+               }`}>
+                  <div className={`w-2.5 h-2.5 rounded-full ${serverStatus === 'connected' ? 'bg-green-500' : serverStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'}`}></div>
+                  <span className="text-xs font-bold">
+                    {serverStatus === 'connected' ? 'متصل بالسيرفر' : serverStatus === 'disconnected' ? 'غير متصل' : 'جاري الاتصال'}
+                  </span>
+               </div>
+            </div>
 
-               {/* Warning/Upload Action */}
-               <div className="lg:col-span-1 space-y-6">
-                  
-                  {/* Server Status for Supervisor */}
-                  <div className={`flex items-center justify-between p-3 rounded-xl border ${
-                    serverStatus === 'connected' 
-                      ? 'bg-green-50 text-green-700 border-green-200' 
-                      : serverStatus === 'disconnected'
-                      ? 'bg-red-50 text-red-700 border-red-200'
-                      : 'bg-yellow-50 text-yellow-700 border-yellow-200'
-                  }`}>
-                    <span className="text-xs font-bold">حالة السيرفر:</span>
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      {serverStatus === 'connected' ? (
-                        <>
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                          </span>
-                          <span>متصل</span>
-                        </>
-                      ) : serverStatus === 'disconnected' ? (
-                        <>
-                          <WifiOff className="w-3.5 h-3.5" />
-                          <span>غير متصل</span>
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>جاري الاتصال...</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Stats Card for Supervisor */}
-                  <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                        <Users className="w-4 h-4 text-primary-500" />
-                        المتدربين المسجلين
-                      </h3>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {isLoadingData ? '...' : 'العدد الحالي في النظام'}
-                      </p>
-                    </div>
-                    <div className="bg-primary-50 text-primary-700 font-bold text-xl px-4 py-2 rounded-lg border border-primary-100 min-w-[3rem] text-center">
-                      {isLoadingData ? <RefreshCw className="w-5 h-5 animate-spin mx-auto" /> : trainees.length}
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="bg-yellow-100 p-2 rounded-full shrink-0">
-                        <Cloud className="w-5 h-5 text-yellow-700" />
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+               {/* Instructions Panel */}
+               <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                 <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-slate-600" />
+                    <h3 className="font-bold text-slate-700">دليل تنسيق الملفات</h3>
+                 </div>
+                 
+                 <div className="p-6">
+                    <div className="mb-6 bg-blue-50 border-blue-200 border px-4 py-3 rounded-xl flex gap-3 items-start">
+                      <Info className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
                       <div>
-                        <h3 className="font-bold text-yellow-800 text-sm mb-1">المزامنة السحابية</h3>
-                        <p className="text-xs text-yellow-700 leading-relaxed">
-                          أنت الآن في وضع التحكم. رفع ملف جديد سيؤدي إلى <strong>مسح واستبدال</strong> جميع البيانات الموجودة على السيرفر (Firebase).
+                        <h4 className="font-bold text-blue-800 text-sm mb-1">تنويه هام</h4>
+                        <p className="text-sm text-blue-700/80 leading-relaxed">
+                          تم تصميم النظام ليعمل بكفاءة مع تقرير <strong>SH06</strong> من نظام رايات. يرجى استخراج التقرير بصيغة Excel دون تعديل الأعمدة الأساسية.
                         </p>
                       </div>
                     </div>
+
+                    <div className="space-y-6">
+                      <div className="relative pl-4 border-r-2 border-slate-200 pr-4">
+                        <strong className="block text-slate-800 mb-2 text-sm">1. البيانات الأساسية المطلوبة:</strong>
+                        <div className="flex flex-wrap gap-2">
+                          {['الرقم التدريبي', 'اسم المتدرب', 'القسم', 'التخصص', 'الجوال', 'المعدل'].map(tag => (
+                            <span key={tag} className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs rounded border border-slate-200">{tag}</span>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="relative pl-4 border-r-2 border-slate-200 pr-4">
+                         <strong className="block text-slate-800 mb-2 text-sm">2. بيانات المقررات (الأعمدة):</strong>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="bg-slate-50 p-2.5 rounded border border-slate-100 text-xs">
+                               <span className="font-semibold block mb-1 text-slate-700">رمز المقرر / اسم المقرر</span>
+                               <span className="text-slate-400">مثال: ENG 101 / لغة انجليزية</span>
+                            </div>
+                            <div className="bg-slate-50 p-2.5 rounded border border-slate-100 text-xs">
+                               <span className="font-semibold block mb-1 text-slate-700">الوحدات المعتمدة للمقرر</span>
+                               <span className="text-slate-400">هام: يجب تطابق الاسم تماماً</span>
+                            </div>
+                         </div>
+                      </div>
+                    </div>
+                 </div>
+               </div>
+
+               {/* Stats & Upload Panel */}
+               <div className="space-y-6">
+                  {/* Count Card */}
+                  <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">إجمالي المسجلين</p>
+                      <h3 className="text-3xl font-black text-slate-800">{isLoadingData ? '-' : trainees.length}</h3>
+                    </div>
+                    <div className="w-12 h-12 bg-primary-50 rounded-xl flex items-center justify-center text-primary-600">
+                      <Users className="w-6 h-6" />
+                    </div>
+                  </div>
+
+                  {/* Warning Card */}
+                  <div className="bg-amber-50 p-5 rounded-2xl border border-amber-200/60">
+                     <h4 className="font-bold text-amber-800 text-sm mb-2 flex items-center gap-2">
+                       <Cloud className="w-4 h-4" />
+                       وضع الاستبدال الكلي
+                     </h4>
+                     <p className="text-xs text-amber-700/80 leading-relaxed">
+                       عند رفع ملف جديد، سيقوم النظام <span className="font-bold underline">بمسح كافة البيانات القديمة</span> واستبدالها بالبيانات الجديدة. هذه العملية لا يمكن التراجع عنها.
+                     </p>
                   </div>
                   
-                  <FileUpload onFileProcessed={handleFileProcessed} isProcessing={isProcessing} />
+                  <div className="bg-white rounded-2xl shadow-lg border border-primary-100 p-1">
+                    <FileUpload onFileProcessed={handleFileProcessed} isProcessing={isProcessing} />
+                  </div>
                </div>
             </div>
           </div>
         )}
 
-        {/* MODE: SEARCH (PUBLIC) */}
+        {/* --- VIEW: SEARCH (HERO) --- */}
         {appState === AppState.SEARCH && !isLoadingData && (
-          <div className="max-w-md mx-auto mt-20 animate-fade-in-up">
-            <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 text-center">
-              <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="w-8 h-8" />
-              </div>
+          <div className="min-h-[60vh] flex flex-col items-center justify-center animate-fade-in-up">
+            
+            <div className="relative w-full max-w-2xl mx-auto">
+              {/* Decorative Blur */}
+              <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-64 h-64 bg-primary-400/20 rounded-full blur-3xl -z-10"></div>
               
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">استعراض السجل التدريبي للمتدرب</h2>
-              
-              {trainees.length > 0 ? (
-                <>
-                  <p className="text-gray-500 mb-8">
-                     أدخل الرقم التدريبي أو رقم الجوال للعرض.
-                  </p>
-                  <form onSubmit={handleSearch} className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={searchId}
-                        onChange={(e) => setSearchId(e.target.value)}
-                        placeholder="الرقم التدريبي أو رقم الجوال..."
-                        className="w-full px-5 py-3 pr-12 rounded-xl border border-gray-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all text-right"
-                        autoFocus
-                      />
-                      <Hash className="absolute right-4 top-3.5 text-gray-400 w-5 h-5" />
-                    </div>
-                    <div className="text-xs text-gray-400 text-right pr-1 space-y-1">
-                      <div>مثال: 4239...</div>
-                      <div className="text-primary-600 font-medium">ملاحظة: عند البحث برقم الجوال يرجى ادخاله بدون صفر (مثال: 558...)</div>
-                    </div>
-                    <button
-                      type="submit"
-                      className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 rounded-xl transition-colors shadow-sm"
-                    >
-                      عرض السجل
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <div className="py-4">
-                  <p className="text-gray-500 mb-4">
-                    لا توجد بيانات متاحة حالياً على السيرفر.
-                  </p>
-                  <div className="text-sm text-gray-400 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    لرفع البيانات، يرجى تسجيل الدخول من خلال أيقونة المشرف 
-                    <UserCog className="w-4 h-4 inline mx-1 align-middle" /> 
-                    في أعلى الصفحة.
-                  </div>
+              <div className="bg-white/70 backdrop-blur-xl p-8 sm:p-10 rounded-3xl shadow-2xl border border-white/50 text-center relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary-400 via-primary-600 to-primary-800"></div>
+                
+                <div className="w-20 h-20 bg-gradient-to-br from-primary-50 to-white rounded-2xl border border-primary-100 flex items-center justify-center mx-auto mb-6 shadow-sm transform rotate-3 hover:rotate-0 transition-all duration-500">
+                  <Search className="w-10 h-10 text-primary-600" />
                 </div>
-              )}
+                
+                <h2 className="text-3xl font-black text-slate-800 mb-3 tracking-tight">استعراض السجل التدريبي</h2>
+                
+                {trainees.length > 0 ? (
+                  <>
+                    <p className="text-slate-500 mb-8 text-lg max-w-md mx-auto leading-relaxed">
+                       أدخل الرقم التدريبي أو رقم الجوال للوصول السريع إلى بيانات السجل الأكاديمي.
+                    </p>
+                    <form onSubmit={handleSearch} className="max-w-md mx-auto relative group">
+                      <div className="relative transform transition-transform duration-300 focus-within:scale-105">
+                        <input
+                          type="text"
+                          value={searchId}
+                          onChange={(e) => setSearchId(e.target.value)}
+                          placeholder="الرقم التدريبي أو رقم الجوال..."
+                          className="w-full px-6 py-4 pr-14 rounded-2xl bg-white border-2 border-slate-200 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 outline-none transition-all text-right shadow-sm text-lg placeholder-slate-400 text-slate-800"
+                          autoFocus
+                        />
+                        <Hash className="absolute right-5 top-5 text-slate-400 group-focus-within:text-primary-500 transition-colors w-6 h-6" />
+                      </div>
+                      
+                      <div className="mt-4 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 px-2 gap-2">
+                        <span>مثال: 4239xxxxx</span>
+                        <span className="text-primary-600 bg-primary-50 px-2 py-1 rounded">بدون صفر للجوال (55xxxxx)</span>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg shadow-primary-200 hover:shadow-primary-300 active:scale-95 text-lg"
+                      >
+                        عرض السجل الآن
+                      </button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="py-8 px-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-full text-slate-600 text-sm font-medium mb-4">
+                       <Cloud className="w-4 h-4" />
+                       <span>قاعدة البيانات فارغة</span>
+                    </div>
+                    <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+                      لم يتم رفع أي بيانات بعد. يرجى من المشرف تسجيل الدخول ورفع ملف السجل التدريبي لبدء العمل.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
+            
+            <p className="mt-8 text-slate-400 text-sm font-medium">نظام آمن ومحمي لبيانات المتدربين</p>
           </div>
         )}
 
-        {/* MODE: VIEW TRAINEE */}
+        {/* --- VIEW: TRAINEE DETAILS --- */}
         {appState === AppState.VIEW && currentTrainee && (
-          <div className="animate-fade-in-up">
-            {/* Breadcrumb / Back */}
-            <button 
-              onClick={resetSearch}
-              className="mb-6 flex items-center text-sm text-gray-500 hover:text-primary-600 transition-colors print:hidden"
-            >
-              <ArrowRight className="w-4 h-4 ml-1" />
-              العودة لقائمة البحث
-            </button>
-
-            {/* Student Header Card */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary-400 to-primary-600"></div>
-              
-              <div className="flex flex-col md:flex-row justify-between md:items-start gap-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border-2 border-white shadow-sm text-gray-400">
-                    <User className="w-8 h-8" />
+          <div className="animate-fade-in-up pb-10">
+            {/* Navigation */}
+            <div className="max-w-6xl mx-auto mb-6 flex items-center justify-between no-print">
+               <button 
+                  onClick={resetSearch}
+                  className="group flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-700 transition-colors bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200 hover:border-primary-200"
+                >
+                  <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-primary-100 transition-colors">
+                    <ArrowRight className="w-3 h-3" />
                   </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{currentTrainee.name}</h1>
-                    <div className="flex items-center gap-2 text-gray-500 mt-1 font-mono">
-                      <Hash className="w-4 h-4" />
-                      <span>{currentTrainee.id}</span>
+                  العودة للبحث
+                </button>
+                
+                <button 
+                  onClick={() => window.print()}
+                  className="flex items-center gap-2 px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all shadow-md hover:shadow-lg text-sm font-bold"
+                >
+                  <FileText className="w-4 h-4" />
+                  طباعة / PDF
+                </button>
+            </div>
+
+            {/* Student Profile Card */}
+            <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+              {/* Card Header */}
+              <div className="relative bg-gradient-to-r from-slate-900 to-slate-800 p-8 text-white overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <div className="relative z-10 flex flex-col md:flex-row gap-6 items-center md:items-start text-center md:text-right">
+                  <div className="w-20 h-20 bg-white/10 backdrop-blur rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+                    <User className="w-10 h-10 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-3xl font-bold mb-2 tracking-tight">{currentTrainee.name}</h1>
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-slate-300 text-sm font-medium font-mono">
+                      <span className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                        <Hash className="w-4 h-4" />
+                        {currentTrainee.id}
+                      </span>
+                      {currentTrainee.details['القسم'] && (
+                        <span className="flex items-center gap-2 bg-white/10 px-3 py-1 rounded-full border border-white/10">
+                           <Building className="w-4 h-4" />
+                           {currentTrainee.details['القسم']}
+                        </span>
+                      )}
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex flex-col gap-2 items-end">
-                   {/* Print Button */}
-                   <button 
-                    onClick={() => window.print()}
-                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium print:hidden w-full md:w-auto justify-center"
-                   >
-                    <FileText className="w-4 h-4" />
-                    طباعة السجل / حفظ صيغة PDF
-                   </button>
                 </div>
               </div>
 
-              {/* Dynamic Student Details Grid - Sorted */}
-              {Object.keys(currentTrainee.details).length > 0 && (
-                <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-6 border-t border-gray-100">
-                  {getSortedDetails(currentTrainee.details).map(([key, value]) => (
-                    <div key={key} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                      <div className="flex items-center gap-2 text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">
-                        {getDetailIcon(key)}
-                        {key}
-                      </div>
-                      <div className="text-gray-900 font-medium truncate" title={String(value)}>
-                        {value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Data Grid */}
+              <div className="p-8 bg-white">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-6 flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  البيانات الأكاديمية والشخصية
+                </h3>
+                
+                {Object.keys(currentTrainee.details).length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {getSortedDetails(currentTrainee.details).map(([key, value]) => {
+                      if(key === 'القسم') return null; // Already shown in header
+                      return (
+                        <div key={key} className="group bg-slate-50 hover:bg-white p-4 rounded-xl border border-slate-100 hover:border-primary-100 hover:shadow-md transition-all duration-200">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-primary-600 group-hover:bg-primary-50 group-hover:border-primary-100 transition-colors">
+                               {getDetailIcon(key)}
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 uppercase">{key}</span>
+                          </div>
+                          <div className="pr-11 text-slate-800 font-bold text-sm break-words leading-relaxed">
+                            {value}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Transcript Table */}
-            <TranscriptTable courses={currentTrainee.courses} />
+            <div className="max-w-6xl mx-auto">
+              <TranscriptTable courses={currentTrainee.courses} />
+            </div>
             
-            <div className="mt-8 text-center text-xs text-gray-400 print:mt-12">
-              تم استخراج هذا التقرير آلياً من نظام السجل التدريبي
+            <div className="mt-8 text-center text-xs text-slate-400 print:mt-12">
+              وثيقة إلكترونية مستخرجة من نظام السجل التدريبي - الكلية التقنية بالطائف
             </div>
           </div>
         )}
       </main>
 
-      {/* Footer / Developer Credit */}
-      <footer className="mt-auto border-t border-gray-200 bg-white py-6 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-2 text-gray-500">
-          <div className="flex items-center gap-2 text-sm font-medium">
-            <Code className="w-4 h-4 text-primary-500" />
-            <span>تصميم وتطوير:</span>
-            <span className="text-gray-900 font-bold">المهندس / عبدالله الزهراني</span>
-          </div>
-          <p className="text-xs text-gray-400">جميع الحقوق محفوظة © {new Date().getFullYear()}</p>
+      {/* FOOTER */}
+      <footer className="mt-auto bg-white border-t border-slate-200 py-8 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+           <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
+             <GraduationCap className="w-5 h-5 text-primary-600" />
+             <span>نظام السجل التدريبي</span>
+           </div>
+           
+           <div className="flex flex-col items-center md:items-end gap-1">
+             <div className="flex items-center gap-2 text-sm bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                <Code className="w-4 h-4 text-slate-400" />
+                <span className="text-slate-500">تصميم وتطوير:</span>
+                <span className="text-primary-700 font-bold">م. عبدالله الزهراني</span>
+             </div>
+             <p className="text-[10px] text-slate-400 pr-1">جميع الحقوق محفوظة © {new Date().getFullYear()}</p>
+           </div>
         </div>
       </footer>
 
-      {/* Supervisor Login Modal */}
+      {/* MODAL */}
       {showLoginModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 transform transition-all scale-100">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all scale-100 border border-white/20">
+            <div className="bg-slate-50 p-5 border-b border-slate-100 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-primary-600" />
-                تسجيل دخول المشرف
+                دخول المشرفين
               </h3>
-              <button 
-                onClick={() => setShowLoginModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
+              <button onClick={() => setShowLoginModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
             
-            <form onSubmit={handleLoginSubmit}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور</label>
-                <div className="relative">
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    value={passwordInput}
-                    onChange={(e) => setPasswordInput(e.target.value)}
-                    className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all text-left"
-                    placeholder="••••••••"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+            <div className="p-6">
+              <form onSubmit={handleLoginSubmit}>
+                <div className="mb-5">
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-2">كلمة المرور</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-100 focus:border-primary-500 outline-none transition-all text-left text-slate-800 placeholder-slate-400 font-mono"
+                      placeholder="••••••••"
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {loginError && (
+                    <div className="mt-3 flex items-center gap-2 text-xs font-bold text-red-600 bg-red-50 p-2 rounded-lg">
+                      <Info className="w-3 h-3" />
+                      {loginError}
+                    </div>
+                  )}
                 </div>
-                {loginError && (
-                  <p className="mt-2 text-sm text-red-600 font-medium">{loginError}</p>
-                )}
-              </div>
-              
-              <button 
-                type="submit"
-                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-2.5 rounded-lg transition-colors"
-              >
-                دخول
-              </button>
-            </form>
+                
+                <button 
+                  type="submit"
+                  className="w-full bg-slate-900 hover:bg-primary-600 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-slate-200"
+                >
+                  تسجيل الدخول
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -7,22 +7,19 @@ interface TranscriptTableProps {
 }
 
 const TranscriptTable: React.FC<TranscriptTableProps> = ({ courses }) => {
-  // Sort courses roughly by semester if possible
   const sortedCourses = [...courses].sort((a, b) => {
     if (a.semester && b.semester) return a.semester.localeCompare(b.semester);
     return 0;
   });
 
-  // Helper to render status icons based on Yes/No
   const renderStatusIcon = (status: string | boolean | undefined, type: 'warning' | 'success') => {
-    // Normalize to string for comparison
     const val = String(status).toLowerCase();
     
     if (val === 'yes' || val === 'true') {
       return (
         <div className="flex justify-center">
-          <div className={`${type === 'warning' ? 'bg-yellow-100 text-yellow-600' : 'bg-green-100 text-green-600'} rounded-full p-1`}>
-            <Check className="w-4 h-4" />
+          <div className={`${type === 'warning' ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'} rounded-full p-1 shadow-sm`}>
+            <Check className="w-3.5 h-3.5 stroke-[3]" />
           </div>
         </div>
       );
@@ -31,66 +28,66 @@ const TranscriptTable: React.FC<TranscriptTableProps> = ({ courses }) => {
     if (val === 'no' || val === 'false') {
       return (
         <div className="flex justify-center">
-          <div className="bg-red-50 text-red-400 rounded-full p-1">
-            <X className="w-4 h-4" />
+          <div className="bg-rose-50 text-rose-400 rounded-full p-1">
+            <X className="w-3.5 h-3.5" />
           </div>
         </div>
       );
     }
 
-    return <span className="text-gray-300">-</span>;
+    return <span className="text-slate-300">-</span>;
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-bold text-gray-800 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-primary-600" />
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="px-6 py-5 bg-white border-b border-slate-100 flex justify-between items-center">
+        <h3 className="font-bold text-slate-800 flex items-center gap-2.5 text-lg">
+          <div className="p-2 bg-primary-50 rounded-lg text-primary-600">
+             <BookOpen className="w-5 h-5" />
+          </div>
           المقررات التدريبية
         </h3>
-        <span className="text-xs font-medium px-2 py-1 bg-gray-200 rounded-full text-gray-600">
+        <span className="text-xs font-bold px-3 py-1.5 bg-slate-100 rounded-full text-slate-600 border border-slate-200">
           عدد المقررات: {courses.length}
         </span>
       </div>
       
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-right">
-          <thead className="bg-gray-100 text-gray-600 uppercase border-b border-gray-200">
+          <thead className="bg-slate-50 text-slate-500 uppercase border-b border-slate-200">
             <tr>
-              <th className="px-6 py-3 font-medium text-right text-xs">رمز المقرر</th>
-              <th className="px-6 py-3 font-medium text-right text-xs">اسم المقرر</th>
-              <th className="px-6 py-3 font-medium text-center text-xs">الوحدات المعتمدة للمقرر</th>
-              <th className="px-4 py-3 font-medium text-center text-xs w-32 bg-green-50 text-green-800 border-l border-gray-200">
-                حالة المقرر/
-                <br/>
-                مستوفى
+              <th className="px-6 py-4 font-bold text-right text-[11px] tracking-wider">رمز المقرر</th>
+              <th className="px-6 py-4 font-bold text-right text-[11px] tracking-wider">اسم المقرر</th>
+              <th className="px-6 py-4 font-bold text-center text-[11px] tracking-wider">الوحدات المعتمدة للمقرر</th>
+              <th className="px-4 py-4 font-bold text-center text-[11px] tracking-wider w-36 bg-emerald-50/50 text-emerald-700 border-l border-slate-100">
+                حالة المقرر/ مستوفى
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-50">
             {sortedCourses.map((course, index) => {
               const isProject = course.courseName.includes('المشروع الإنتاجي');
 
               return (
-                <tr key={index} className="hover:bg-gray-50 transition-colors">
-                   <td className="px-6 py-4 font-mono text-gray-500 font-bold whitespace-nowrap">
+                <tr key={index} className="hover:bg-slate-50/80 transition-colors group">
+                   <td className="px-6 py-4 font-mono text-slate-500 font-semibold whitespace-nowrap text-xs">
                     {course.courseCode || '-'}
                   </td>
-                  <td className="px-6 py-4 font-medium text-gray-900">
+                  <td className="px-6 py-4 font-bold text-slate-700">
                     {course.courseName}
                     {isProject && (
-                      <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200 shadow-sm w-fit">
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200/50 shadow-sm w-fit">
                         <AlertCircle className="w-3 h-3 shrink-0" />
-                        هذا المقرر غير محسوب ضمن الخطة حالياً
+                        غير محسوب ضمن الخطة حالياً
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-gray-500 text-center">
+                  <td className="px-6 py-4 text-slate-500 text-center font-mono font-medium">
                     {course.credits || '-'}
                   </td>
 
                   {/* Column: Completed (Mustawfi) */}
-                  <td className="px-4 py-4 text-center border-l border-gray-100 bg-green-50/30">
+                  <td className="px-4 py-4 text-center border-l border-slate-50 bg-emerald-50/10 group-hover:bg-emerald-50/20 transition-colors">
                      {renderStatusIcon(course.isCompleted, 'success')}
                   </td>
                 </tr>
@@ -98,8 +95,11 @@ const TranscriptTable: React.FC<TranscriptTableProps> = ({ courses }) => {
             })}
             {courses.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-400">
-                  لا توجد مقررات مسجلة لهذا المتدرب.
+                <td colSpan={4} className="px-6 py-12 text-center text-slate-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <BookOpen className="w-8 h-8 opacity-20" />
+                    <p>لا توجد مقررات مسجلة لهذا المتدرب.</p>
+                  </div>
                 </td>
               </tr>
             )}
